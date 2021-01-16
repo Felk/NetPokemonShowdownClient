@@ -8,17 +8,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
+      - name: checkout showdown
+        uses: actions/checkout@v2
         with:
           repository: smogon/pokemon-showdown
           path: pokemon-showdown
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
-      - run: npm start --prefix pokemon-showdown > out.log 2>&1 &
+      - name: start showdown in background
+        run: npm start --prefix pokemon-showdown > showdown.log 2>&1 &
       - uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 5.0.x
       - run: dotnet build
-      - run: tail -f -n+1 out.log | grep -qe "now listening"
+      - name: wait until showdown has started
+        run: (tail -f -n+1 showdown.log &) | grep -qe "now listening"
+        timeout-minutes: 5
       - run: dotnet test
+      - name: print showdown logs
+        if: ${{ always() }}
+        run: cat showdown.log
